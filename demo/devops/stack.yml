@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  bookstore_app:
+    image: bookstore
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_URL=jdbc:postgresql://bookstore_db:5432/book
+      - DB_USER=postgres
+      - DB_PASS=12345
+    networks:
+      - bookstore_net
+      - traefik-public
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.bookstore_app.entrypoints=http"
+        - "traefik.http.routers.bookstore_app.rule=Host(`bookstore.byrorm.com`)"
+        - "traefik.http.middlewares.bookstore_app-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.bookstore_app.middlewares=bookstore_app-https-redirect"
+        - "traefik.http.routers.bookstore_app-secure.entrypoints=https"
+        - "traefik.http.routers.bookstore_app-secure.rule=Host(`bookstore.byrorm.com`)"
+        - "traefik.http.routers.bookstore_app-secure.tls=true"
+        - "traefik.http.routers.bookstore_app-secure.tls.certresolver=http"
+        - "traefik.http.routers.bookstore_app-secure.service=bookstore_app"
+        - "traefik.http.services.bookstore_app.loadbalancer.server.port=8080"
+        - "traefik.docker.network=traefik-public"
+
+        # Subdominio adicional: api.byrorm.com
+        - "traefik.http.routers.bookstore_app_api.entrypoints=http"
+        - "traefik.http.routers.bookstore_app_api.rule=Host(`api.byrorm.com`)"
+        - "traefik.http.routers.bookstore_app_api.middlewares=bookstore_app-https-redirect"
+        - "traefik.http.routers.bookstore_app_api-secure.entrypoints=https"
+        - "traefik.http.routers.bookstore_app_api-secure.rule=Host(`api.byrorm.com`)"
+        - "traefik.http.routers.bookstore_app_api-secure.tls=true"
+        - "traefik.http.routers.bookstore_app_api-secure.tls.certresolver=http"
+        - "traefik.http.routers.bookstore_app_api-secure.service=bookstore_app"
+
+  bookstore_db:
+    image: postgres:14
+    environment:
+      - TZ=America/Guayaquil
+      - POSTGRES_DB=book
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_USER=postgres
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - db_data:/var/lib/postgresql/data/pgdata
+    networks:
+      - bookstore_net
+
+volumes:
+  db_data:
+    external: true
+
+networks:
+  bookstore_net:
+    external: true
+  traefik-public:
+    external: true
