@@ -1,5 +1,8 @@
-FROM openjdk:23-ea-21-jdk-oracle
+FROM openjdk:21-jdk-oracle
 
-COPY demo-0.0.1-SNAPSHOT.jar /demo.jar
+WORKDIR /app
+COPY demo-0.0.1-SNAPSHOT.jar /app/demo.jar
 
-CMD ["java", "-jar", "/.jar"]
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+
+CMD ["sh", "-c", "java $JAVA_OPTS -jar /app/demo.jar"]

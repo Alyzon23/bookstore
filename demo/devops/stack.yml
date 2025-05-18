@@ -1,40 +1,50 @@
 version: '3.8'
 
 services:
-  bookstore_app:
-    image: bookstore
+  bookstoreapp:
+    image: bookstore:1
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - DB_URL=jdbc:postgresql://bookstore_db:5432/book
-      - DB_USER=postgres
-      - DB_PASS=12345
+      # Activa el perfil de desarrollo
+      - SPRING_PROFILES_ACTIVE=dev
+      # Configuración de PostgreSQL
+      - spring.datasource.url=jdbc:postgresql://bookstore_db:5432/book
+      - spring.datasource.username=postgres
+      - spring.datasource.password=12345
+      - spring.datasource.driver-class-name=org.postgresql.Driver
+      # Dialecto de Hibernate para PostgreSQL
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
     networks:
       - bookstore_net
       - traefik-public
+    ports:
+      - "8080:8080"  # Exponer el puerto correctamente
     deploy:
+      replicas: 2  # Ejecuta 2 instancias de bookstoreapp
       labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.bookstore_app.entrypoints=http"
-        - "traefik.http.routers.bookstore_app.rule=Host(`bookstore.byrorm.com`)"
-        - "traefik.http.middlewares.bookstore_app-https-redirect.redirectscheme.scheme=https"
-        - "traefik.http.routers.bookstore_app.middlewares=bookstore_app-https-redirect"
-        - "traefik.http.routers.bookstore_app-secure.entrypoints=https"
-        - "traefik.http.routers.bookstore_app-secure.rule=Host(`bookstore.byrorm.com`)"
-        - "traefik.http.routers.bookstore_app-secure.tls=true"
-        - "traefik.http.routers.bookstore_app-secure.tls.certresolver=http"
-        - "traefik.http.routers.bookstore_app-secure.service=bookstore_app"
-        - "traefik.http.services.bookstore_app.loadbalancer.server.port=8080"
+        - "traefik.enable=true"  # Rutas principales para la aplicación
+        - "traefik.http.routers.bookstoreapp.entrypoints=http"
+        - "traefik.http.routers.bookstoreapp.rule=Host(`bookstoreapp.byrorm.com`)"
+        - "traefik.http.middlewares.bookstoreapp-https-redirect.redirectscheme.scheme=https"
+        - "traefik.http.routers.bookstoreapp.middlewares=bookstoreapp-https-redirect"
+        # Ruta segura HTTPS
+        - "traefik.http.routers.bookstoreapp-secure.entrypoints=https"
+        - "traefik.http.routers.bookstoreapp-secure.rule=Host(`bookstore.byrorm.com`)"
+        - "traefik.http.routers.bookstoreapp-secure.tls=true"
+        - "traefik.http.routers.bookstoreapp-secure.tls.certresolver=http"
+        - "traefik.http.routers.bookstoreapp-secure.service=bookstoreapp"
+        - "traefik.http.services.bookstoreapp.loadbalancer.server.port=8080"
         - "traefik.docker.network=traefik-public"
-
-        # Subdominio adicional: api.byrorm.com
-        - "traefik.http.routers.bookstore_app_api.entrypoints=http"
-        - "traefik.http.routers.bookstore_app_api.rule=Host(`api.byrorm.com`)"
-        - "traefik.http.routers.bookstore_app_api.middlewares=bookstore_app-https-redirect"
-        - "traefik.http.routers.bookstore_app_api-secure.entrypoints=https"
-        - "traefik.http.routers.bookstore_app_api-secure.rule=Host(`api.byrorm.com`)"
-        - "traefik.http.routers.bookstore_app_api-secure.tls=true"
-        - "traefik.http.routers.bookstore_app_api-secure.tls.certresolver=http"
-        - "traefik.http.routers.bookstore_app_api-secure.service=bookstore_app"
+        # Subdominio adicional
+        - "traefik.http.routers.bookstoreapp_api.entrypoints=http"
+        - "traefik.http.routers.bookstoreapp_api.rule=Host(`api.byrorm.com`)"
+        - "traefik.http.routers.bookstoreapp_api.middlewares=bookstoreapp-https-redirect"
+        - "traefik.http.routers.bookstoreapp_api-secure.entrypoints=https"
+        - "traefik.http.routers.bookstoreapp_api-secure.rule=Host(`api.byrorm.com`)"
+        - "traefik.http.routers.bookstoreapp_api-secure.tls=true"
+        - "traefik.http.routers.bookstoreapp_api-secure.tls.certresolver=http"
+        - "traefik.http.routers.bookstoreapp_api-secure.service=bookstoreapp"
+    depends_on:
+      - bookstore_db
 
   bookstore_db:
     image: postgres:14
